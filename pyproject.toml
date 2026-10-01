@@ -5,11 +5,13 @@ description = "RUL prediction on NASA C-MAPSS with grounded LLM failure explanat
 authors = [{ name = "Louis Adams", email = "louistadams3@gmail.com" }]
 requires-python = ">=3.11"
 dependencies = [
+    "h5py>=3.16.0",
     "matplotlib>=3.11.2",
     "numpy>=2.4.6",
     "pandas>=3.0.6",
     "scikit-learn>=1.9.1",
     "scipy>=1.17.1",
+    "stream-unzip>=0.0.101",
     "tabulate>=0.10.0",
     "xgboost>=3.2.0",
 ]

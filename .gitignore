@@ -5,3 +5,4 @@ __pycache__/
 *.egg-info/
 # Raw data is fetched + checksum-verified by `python -m cmapss.download`; don't commit it.
 data/raw/
+data/interim/

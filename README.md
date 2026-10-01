@@ -3,13 +3,16 @@
 Remaining Useful Life (RUL) prediction on NASA C-MAPSS turbofan data, with LLM-generated
 failure explanations grounded in the sensor signals that drove each prediction.
 
-**Status:** week 1. Data pipeline, sanity floors, linear + XGBoost baselines, per-model reports.
+**Status:** week 1. C-MAPSS pipeline, sanity floors, linear + XGBoost baselines, per-model
+reports. N-CMAPSS ingested as ground truth for the explanation evals
+([`docs/NCMAPSS.md`](docs/NCMAPSS.md)).
 
 ## Quickstart
 
 ```bash
 uv sync
 uv run python -m cmapss.download          # fetch + sha256-verify C-MAPSS into data/raw/
+uv run python -m cmapss.ncmapss_download  # N-CMAPSS (~5 min, 15.8 GB streamed, 4.6 GB kept)
 uv run pytest                             # data/label/leakage tests
 uv run python -m cmapss.baselines --subset FD001 --cap 125
 ```
@@ -44,7 +47,9 @@ src/cmapss/
   sanity.py     floors, leakage checks
   report.py     per-model report generation
   baselines.py  week-1 runner
+  ncmapss.py    N-CMAPSS loader, float32 repack, per-engine fault ground truth
+  ncmapss_download.py  streaming download + checksums
   ablation.py   seeds / feature ablations / shuffled labels for a suspicious result
-tests/          data facts, label correctness, lookahead + leakage guards
+tests/          data facts, label correctness, lookahead + leakage guards, N-CMAPSS truth
 reports/        generated, committed so results are reviewable in diffs
 ```
