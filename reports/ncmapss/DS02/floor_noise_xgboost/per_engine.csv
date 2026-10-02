@@ -1,0 +1,4 @@
+subset,unit_local,components,Fc,engines,cycles,rmse,bias
+DS02-006,11,HPT+LPT,3,1,59,19.79,8.67
+DS02-006,14,HPT+LPT,1,1,76,23.54,-1.57
+DS02-006,15,HPT+LPT,2,1,67,22.9,4.49

@@ -1,0 +1,77 @@
+{
+  "model": "floor_noise_xgboost",
+  "all_test_cycles": {
+    "rmse": 22.288,
+    "mae": 18.795,
+    "phm08_score": 1937.2,
+    "mean_bias": 3.432
+  },
+  "distribution": {
+    "true_quantiles": {
+      "0.05": 3.0,
+      "0.25": 16.2,
+      "0.5": 33.0,
+      "0.75": 50.0,
+      "0.95": 65.9
+    },
+    "pred_quantiles": {
+      "0.05": 23.4,
+      "0.25": 30.4,
+      "0.5": 36.4,
+      "0.75": 42.3,
+      "0.95": 52.0
+    },
+    "true_range": [
+      0.0,
+      75.0
+    ],
+    "pred_range": [
+      20.8,
+      60.4
+    ],
+    "std_ratio": 0.428,
+    "ks_stat": 0.322,
+    "ks_pvalue": 0.0
+  },
+  "by_subset": [
+    {
+      "subset": "DS02-006",
+      "engines": 3,
+      "cycles": 202,
+      "rmse": 22.29,
+      "bias": 3.43
+    }
+  ],
+  "by_components": [
+    {
+      "components": "HPT+LPT",
+      "engines": 3,
+      "cycles": 202,
+      "rmse": 22.29,
+      "bias": 3.43
+    }
+  ],
+  "by_Fc": [
+    {
+      "Fc": 1,
+      "engines": 1,
+      "cycles": 76,
+      "rmse": 23.54,
+      "bias": -1.57
+    },
+    {
+      "Fc": 2,
+      "engines": 1,
+      "cycles": 67,
+      "rmse": 22.9,
+      "bias": 4.49
+    },
+    {
+      "Fc": 3,
+      "engines": 1,
+      "cycles": 59,
+      "rmse": 19.79,
+      "bias": 8.67
+    }
+  ]
+}

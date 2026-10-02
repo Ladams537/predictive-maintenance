@@ -1,0 +1,50 @@
+{
+  "model": "floor_noise_xgboost",
+  "cap": 125,
+  "vs_capped_truth": {
+    "rmse": 45.247,
+    "mae": 37.763,
+    "phm08_score": 158385.0,
+    "mean_bias": 14.669
+  },
+  "vs_raw_truth": {
+    "rmse": 54.661,
+    "mae": 46.456,
+    "phm08_score": 184616.2,
+    "mean_bias": 5.975
+  },
+  "within_cap": {
+    "rmse": 49.233,
+    "mae": 39.925,
+    "phm08_score": 157646.4,
+    "mean_bias": 31.914,
+    "n": 181
+  },
+  "distribution_vs_capped_truth": {
+    "true_quantiles": {
+      "0.05": 10.0,
+      "0.25": 36.0,
+      "0.5": 88.0,
+      "0.75": 125.0,
+      "0.95": 125.0
+    },
+    "pred_quantiles": {
+      "0.05": 87.3,
+      "0.25": 90.7,
+      "0.5": 92.7,
+      "0.75": 94.7,
+      "0.95": 97.3
+    },
+    "true_range": [
+      6.0,
+      125.0
+    ],
+    "pred_range": [
+      74.6,
+      102.8
+    ],
+    "std_ratio": 0.077,
+    "ks_stat": 0.468,
+    "ks_pvalue": 0.0
+  }
+}

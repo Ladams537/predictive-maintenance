@@ -1,0 +1,50 @@
+{
+  "model": "floor_mean",
+  "cap": 125,
+  "vs_capped_truth": {
+    "rmse": 43.7,
+    "mae": 36.443,
+    "phm08_score": 57686.9,
+    "mean_bias": 19.383
+  },
+  "vs_raw_truth": {
+    "rmse": 45.07,
+    "mae": 38.003,
+    "phm08_score": 57949.6,
+    "mean_bias": 17.823
+  },
+  "within_cap": {
+    "rmse": 45.471,
+    "mae": 37.252,
+    "phm08_score": 57528.0,
+    "mean_bias": 28.426,
+    "n": 85
+  },
+  "distribution_vs_capped_truth": {
+    "true_quantiles": {
+      "0.05": 9.9,
+      "0.25": 43.2,
+      "0.5": 77.5,
+      "0.75": 115.0,
+      "0.95": 125.0
+    },
+    "pred_quantiles": {
+      "0.05": 93.1,
+      "0.25": 93.1,
+      "0.5": 93.1,
+      "0.75": 93.1,
+      "0.95": 93.1
+    },
+    "true_range": [
+      6.0,
+      125.0
+    ],
+    "pred_range": [
+      93.1,
+      93.1
+    ],
+    "std_ratio": 0.0,
+    "ks_stat": 0.65,
+    "ks_pvalue": 0.0
+  }
+}
