@@ -54,3 +54,54 @@ def test_rul_and_health_state():
     np.testing.assert_array_equal(df.rul, df.unit.map(last) - df.cycle)
     # Once abnormal (hs=0), an engine never becomes healthy again.
     assert full.groupby("unit").hs.apply(lambda s: (s.diff().dropna() <= 0).all()).all()
+
+
+def test_healthy_model_is_cross_fitted(monkeypatch):
+    """No engine's residuals may come from a healthy model that was fit on that engine, and
+    test engines must never be in any healthy-model fit."""
+    import pandas as pd
+
+    from cmapss import ncmapss_features as nf
+
+    rng = np.random.default_rng(0)
+    rows = []
+    for engine in range(12):
+        split = "test" if engine >= 9 else "dev"
+        for cycle in range(1, 16):
+            w = rng.normal(size=(20, len(nf.OPS)))
+            df = pd.DataFrame(w, columns=nf.OPS)
+            for j, s in enumerate(nf.SENSORS):
+                df[s] = w.sum(1) * (j + 1) + 0.01 * cycle
+            rows.append(df.assign(engine=engine, split=split, cycle=cycle))
+    df = pd.concat(rows, ignore_index=True)
+
+    calls = []
+    real = nf.fit_predict
+
+    def spy(train, apply):
+        calls.append((set(train["engine"]), set(apply["engine"])))
+        return real(train, apply)
+
+    monkeypatch.setattr(nf, "fit_predict", spy)
+    monkeypatch.setattr(nf, "_healthy_model", lambda: nf.XGBRegressor(n_estimators=5))
+    resid, _ = nf.residuals(df)
+    test_engines = {9, 10, 11}
+    assert len(calls) == nf.N_FOLDS + 1
+    for fit_on, applied_to in calls:
+        assert not fit_on & applied_to
+        assert not fit_on & test_engines
+    assert np.isfinite(resid).all()
+
+
+def test_cycle_table():
+    from cmapss.ncmapss_features import OUT, load_cycles
+
+    if not OUT.exists():
+        pytest.skip("run python -m cmapss.ncmapss_features first")
+    c = load_cycles()
+    assert c.engine.nunique() == 99
+    assert not c.isna().any().any()
+    g = c.groupby("engine")
+    # One row per cycle, contiguous from 1, RUL = last cycle - cycle.
+    assert (g.cycle.min() == 1).all() and (g.cycle.diff().dropna() == 1).all()
+    np.testing.assert_array_equal(c.rul, g.cycle.transform("max") - c.cycle)

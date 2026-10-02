@@ -65,3 +65,54 @@ HPT efficiency.
    eval set (each judged by a model that didn't train on it).
 6. **Train/test shift built in.** e.g. DS02 dev engines are all Fc=3 (long flights); its
    test engines are Fc 1, 2 and 3.
+
+## RUL baselines (`python -m cmapss.ncmapss_baselines`)
+
+**Representation.** N-CMAPSS operating conditions are continuous, so C-MAPSS-style clustering
+doesn't apply. `cmapss.ncmapss_features` fits a *healthy-engine model* f(alt, Mach, TRA, T2) →
+sensor (XGBoost, one per sensor) on cycles 1–10 of dev engines. It works out what each sensor
+should read at these conditions on an undegraded engine. Residuals (measured − expected,
+scaled by healthy spread) are averaged per flight cycle. Dev residuals are cross-fitted
+(5-fold by engine) and test residuals use f fit on all dev engines, so every residual is
+out-of-sample. A test enforces this. f explains ≥ 99.9% of every sensor's variance on
+held-out healthy engines: operating conditions swamp degradation in the raw signal.
+
+Healthy rows are chosen by cycle number (observable), not the simulator's `hs` flag (ground
+truth).
+
+**Protocol.** Uncapped RUL, every cycle of every test engine scored (test engines run to
+failure). CV = 5-fold GroupKFold by engine on dev. Window features over the last 10 cycles.
+
+| setting | floor: mean | floor: age only | noise → XGBoost | linear | XGBoost | XGBoost CV |
+|---|---|---|---|---|---|---|
+| pooled (99 engines, 39 test) | 23.4 | 11.9 | 24.0 | 9.5 | **7.1** | 9.0 ± 1.0 |
+| DS02 (6 dev, 3 test) | 20.4 | 9.4 | 22.3 | 10.7 | **6.4** | 6.8 ± 2.0 |
+
+- **The age-only floor is strong here.** Lifetimes are short (54–100 cycles) and similar, so
+  "mean lifetime − cycle" already gets 9–12. On DS02, linear regression is *worse* than age
+  alone: 6 training engines aren't enough for it. Any model has to be judged against this
+  floor, not the mean floor.
+- Error is mostly an early-life offset. The model predicts roughly an average lifetime until
+  degradation shows, then converges (see `reports/ncmapss/pooled/xgboost/trajectories.png`).
+  Worst case: DS08a unit 12 still predicts ~25 cycles left at failure, a late (dangerous)
+  error.
+
+`python -m cmapss.ncmapss_ablation` (XGBoost test RMSE):
+
+| features | pooled | DS02 |
+|---|---|---|
+| all | 7.09 | 6.42 |
+| cycle only | 11.54 | 9.48 |
+| no cycle | 8.89 | 7.09 |
+| residuals + cycle (no flight profile) | 7.64 | 6.91 |
+| flight profile + cycle | 11.29 | 10.07 |
+| shuffled labels | 23.42 | 22.24 |
+
+The residuals carry the signal. Flight profile on its own adds nothing over age (11.3 vs 11.5),
+so the flight-class confound isn't being exploited as a shortcut. It helps only in combination
+with the residuals (7.6 → 7.1), which is expected: what a residual means depends on the
+conditions it was measured in.
+
+**Not yet comparable to the literature.** Published DS02 results mostly score per 1 Hz sample
+or per window, not per cycle, and some use different train/test units. Matching protocols
+needs a paper read (see README).

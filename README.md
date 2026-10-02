@@ -17,6 +17,10 @@ uv run pytest                             # data/label/leakage tests
 uv run python -m cmapss.baselines --subset FD001 --cap 125
 ```
 
+N-CMAPSS pipeline: `python -m cmapss.ncmapss ground-truth`, then
+`python -m cmapss.ncmapss_features` (~12 min, builds the per-cycle residual table), then
+`python -m cmapss.ncmapss_baselines`.
+
 Every model writes `reports/<subset>/<model>/` (metrics.json, report.md, per_unit.csv,
 overview.png, worst_engines.png), and each subset gets a `SUMMARY.md`.
 
@@ -35,6 +39,15 @@ baseline beats those older papers by ~10 RMSE. That's an open question, not a cl
 [`docs/PROTOCOL.md`](docs/PROTOCOL.md), which also documents how every number is computed
 and how the suspicious ones were checked.
 
+### N-CMAPSS (uncapped RUL, every test cycle)
+
+| setting | floor (age only) | linear | XGBoost |
+|---|---|---|---|
+| pooled, all 9 subsets | 11.9 | 9.5 | 7.1 |
+| DS02 | 9.4 | 10.7 | 6.4 |
+
+Representation, protocol and ablations: [`docs/NCMAPSS.md`](docs/NCMAPSS.md).
+
 ## Layout
 
 ```
@@ -49,6 +62,9 @@ src/cmapss/
   baselines.py  week-1 runner
   ncmapss.py    N-CMAPSS loader, float32 repack, per-engine fault ground truth
   ncmapss_download.py  streaming download + checksums
+  ncmapss_features.py  healthy-engine model -> per-cycle residuals (cross-fitted)
+  ncmapss_baselines.py floors / linear / XGBoost with per-subset, per-fault, per-Fc breakdowns
+  ncmapss_ablation.py  what the N-CMAPSS baseline actually uses
   ablation.py   seeds / feature ablations / shuffled labels for a suspicious result
 tests/          data facts, label correctness, lookahead + leakage guards, N-CMAPSS truth
 reports/        generated, committed so results are reviewable in diffs
