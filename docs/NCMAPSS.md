@@ -88,7 +88,7 @@ failure). CV = 5-fold GroupKFold by engine on dev. Window features over the last
 | pooled (99 engines, 39 test) | 23.4 | 11.9 | 24.0 | 9.5 | **7.1** | 9.0 ± 1.0 |
 | DS02 (6 dev, 3 test) | 20.4 | 9.4 | 22.3 | 10.7 | **6.4** | 6.8 ± 2.0 |
 
-- **The age-only floor is strong here.** Lifetimes are short (54–100 cycles) and similar, so
+- **The age-only floor is strong here.** Lifetimes are short (48–100 cycles) and similar, so
   "mean lifetime − cycle" already gets 9–12. On DS02, linear regression is *worse* than age
   alone: 6 training engines aren't enough for it. Any model has to be judged against this
   floor, not the mean floor.
