@@ -1,0 +1,50 @@
+{
+  "model": "floor_lifetime",
+  "cap": 125,
+  "vs_capped_truth": {
+    "rmse": 46.118,
+    "mae": 34.438,
+    "phm08_score": 103388.2,
+    "mean_bias": 6.706
+  },
+  "vs_raw_truth": {
+    "rmse": 47.225,
+    "mae": 35.998,
+    "phm08_score": 118455.5,
+    "mean_bias": 5.146
+  },
+  "within_cap": {
+    "rmse": 44.443,
+    "mae": 35.035,
+    "phm08_score": 85637.1,
+    "mean_bias": 13.369,
+    "n": 85
+  },
+  "distribution_vs_capped_truth": {
+    "true_quantiles": {
+      "0.05": 9.9,
+      "0.25": 43.2,
+      "0.5": 77.5,
+      "0.75": 115.0,
+      "0.95": 125.0
+    },
+    "pred_quantiles": {
+      "0.05": 0.0,
+      "0.25": 39.2,
+      "0.5": 99.2,
+      "0.75": 125.0,
+      "0.95": 125.0
+    },
+    "true_range": [
+      6.0,
+      125.0
+    ],
+    "pred_range": [
+      0.0,
+      125.0
+    ],
+    "std_ratio": 1.229,
+    "ks_stat": 0.23,
+    "ks_pvalue": 0.0099
+  }
+}

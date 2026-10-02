@@ -6,6 +6,7 @@ Usage: uv run python -m cmapss.baselines --subset FD001 --cap 125
 import argparse
 import json
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -17,20 +18,20 @@ from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 
 from cmapss import sanity
+from cmapss.conditions import ConditionNormalizer, informative_sensors_by_condition
 from cmapss.data import REPO_ROOT, cap_rul, last_cycles, load_test, load_train
-from cmapss.features import feature_columns, informative_sensors, window_features
+from cmapss.features import feature_columns, window_features
 from cmapss.metrics import rmse
 from cmapss.report import sensor_reference, write_report
 
 SEED = 0
 
-# Published FD001 RMSE (cap 125/130, last-cycle evaluation) -- for "is my number plausible?".
-# Verify against the papers before quoting; these are the commonly cited figures.
-PUBLISHED_FD001 = {
-    "CNN (Babu et al. 2016)": 18.45,
-    "LSTM (Zheng et al. 2017)": 16.14,
-    "DCNN (Li et al. 2018)": 12.61,
-    "SOTA band (Transformer/attention, 2021+)": "~11-12",
+# Published RMSE (cap 125/130, last-cycle evaluation), for "is my number plausible?".
+# Commonly cited figures; verify against the papers before quoting.
+PUBLISHED = {
+    "CNN (Babu et al. 2016)": {"FD001": 18.45, "FD002": 30.29, "FD003": 19.82, "FD004": 29.16},
+    "LSTM (Zheng et al. 2017)": {"FD001": 16.14, "FD002": 24.49, "FD003": 16.18, "FD004": 28.17},
+    "DCNN (Li et al. 2018)": {"FD001": 12.61, "FD002": 22.36, "FD003": 12.64, "FD004": 23.31},
 }
 
 ModelFactory = Callable[[], object]
@@ -61,6 +62,17 @@ def sample_eval_rows(df: pd.DataFrame, per_unit: int, seed: int) -> pd.Index:
     return pd.Index(np.concatenate(idx))
 
 
+def _row(name: str, res: dict, cv: dict | None = None) -> dict:
+    return {
+        "model": name,
+        **res["vs_capped_truth"],
+        "rmse_raw_truth": res["vs_raw_truth"]["rmse"],
+        "rmse_rul_le_cap": res["within_cap"]["rmse"],
+        "std_ratio": res["distribution_vs_capped_truth"]["std_ratio"],
+        **(cv or {}),
+    }
+
+
 def cross_validate(
     factory: ModelFactory, X: pd.DataFrame, y: np.ndarray, train: pd.DataFrame, n_splits: int = 5
 ) -> dict:
@@ -79,21 +91,58 @@ def cross_validate(
     }
 
 
-def run(subset: str, cap: float | None, window: int, out_root: Path) -> pd.DataFrame:
-    train, test = load_train(subset), load_test(subset)
-    test_last = last_cycles(test)
-    sensors = informative_sensors(train)
+@dataclass
+class Prepared:
+    raw_train: pd.DataFrame
+    raw_test: pd.DataFrame
+    train: pd.DataFrame  # condition-normalised
+    test: pd.DataFrame
+    test_last: pd.DataFrame
+    sensors: list[str]
+    cols: list[str]
+    X_train: pd.DataFrame
+    X_test_last: pd.DataFrame
+    n_conditions: int
+
+
+def prepare(subset: str, window: int = 30, normalise: bool = True) -> Prepared:
+    """Load, condition-normalise (train stats only), select sensors, build window features."""
+    raw_train, raw_test = load_train(subset), load_test(subset)
+    norm = ConditionNormalizer().fit(raw_train)
+    sensors = informative_sensors_by_condition(raw_train, norm.condition(raw_train))
+    train, test = (
+        (norm.transform(raw_train), norm.transform(raw_test))
+        if normalise
+        else (raw_train, raw_test)
+    )
     cols = feature_columns(sensors)
-    X_train = window_features(train, sensors, window)[cols]
-    X_test_last = window_features(test, sensors, window)[cols].loc[
-        test.groupby("unit")["cycle"].idxmax().to_numpy()
-    ]
+    X_test = window_features(test, sensors, window)[cols]
+    return Prepared(
+        raw_train,
+        raw_test,
+        train,
+        test,
+        last_cycles(test),
+        sensors,
+        cols,
+        window_features(train, sensors, window)[cols],
+        X_test.loc[test.groupby("unit")["cycle"].idxmax().to_numpy()],
+        norm.n_conditions,
+    )
+
+
+def run(subset: str, cap: float | None, window: int, out_root: Path) -> pd.DataFrame:
+    p = prepare(subset, window)
+    raw_train, raw_test, train, test = p.raw_train, p.raw_test, p.train, p.test
+    test_last, sensors, cols = p.test_last, p.sensors, p.cols
+    X_train, X_test_last = p.X_train, p.X_test_last
     y_train = cap_rul(train["rul"], cap)
     ref = sensor_reference(train, sensors)
     out = out_root / subset
 
     checks = {
-        "trajectory_overlap": sanity.trajectory_overlap(train, test),
+        "trajectory_overlap": sanity.trajectory_overlap(raw_train, raw_test),
+        "operating_conditions": p.n_conditions,
         "informative_sensors": sensors,
         "n_train_units": int(train.unit.nunique()),
         "n_test_units": int(test.unit.nunique()),
@@ -108,14 +157,7 @@ def run(subset: str, cap: float | None, window: int, out_root: Path) -> pd.DataF
     }
     for name, pred in preds.items():
         res = write_report(out / name, name, test, test_last, pred, cap, ref)
-        rows.append(
-            {
-                "model": name,
-                **res["vs_capped_truth"],
-                "rmse_raw_truth": res["vs_raw_truth"]["rmse"],
-                "std_ratio": res["distribution_vs_capped_truth"]["std_ratio"],
-            }
-        )
+        rows.append(_row(name, res))
 
     # Noise floor: same model class, features replaced by noise. Keep `cycle` out of it --
     # the point is "what does the model learn with zero signal".
@@ -132,14 +174,7 @@ def run(subset: str, cap: float | None, window: int, out_root: Path) -> pd.DataF
         cap,
         ref,
     )
-    rows.append(
-        {
-            "model": "floor_noise_xgboost",
-            **res["vs_capped_truth"],
-            "rmse_raw_truth": res["vs_raw_truth"]["rmse"],
-            "std_ratio": res["distribution_vs_capped_truth"]["std_ratio"],
-        }
-    )
+    rows.append(_row("floor_noise_xgboost", res))
 
     for name, factory in MODELS.items():
         cv = cross_validate(factory, X_train, y_train, train)
@@ -149,22 +184,16 @@ def run(subset: str, cap: float | None, window: int, out_root: Path) -> pd.DataF
         res = write_report(
             out / name, name, test, test_last, pred, cap, ref, extra={**cv, "features": cols}
         )
-        rows.append(
-            {
-                "model": name,
-                **res["vs_capped_truth"],
-                "rmse_raw_truth": res["vs_raw_truth"]["rmse"],
-                "std_ratio": res["distribution_vs_capped_truth"]["std_ratio"],
-                **cv,
-            }
-        )
+        rows.append(_row(name, res, cv))
 
     table = pd.DataFrame(rows).drop(columns=["cv_rmse_folds"], errors="ignore")
     summary = [
         f"# {subset} baselines (RUL cap {cap})",
         "",
         "Test metrics on the last observed cycle of each engine. `rmse` is vs capped truth "
-        "(the convention in most papers); `rmse_raw_truth` is vs the uncapped labels. "
+        "(the convention in most papers); `rmse_raw_truth` is vs the uncapped labels; "
+        "`rmse_rul_le_cap` uses only engines whose true RUL <= cap, where the capping "
+        "convention makes no difference -- the most protocol-robust number here. "
         "`cv_rmse_mean` is 5-fold GroupKFold-by-engine on train -- use it, not test, "
         "for model selection.",
         "",
@@ -176,13 +205,12 @@ def run(subset: str, cap: float | None, window: int, out_root: Path) -> pd.DataF
         json.dumps(checks, indent=2),
         "```",
     ]
-    if subset == "FD001":
-        summary += [
-            "",
-            "## Published FD001 reference (RMSE)",
-            "",
-            pd.Series(PUBLISHED_FD001, name="RMSE").to_markdown(),
-        ]
+    summary += [
+        "",
+        f"## Published {subset} reference (RMSE)",
+        "",
+        pd.Series({k: v[subset] for k, v in PUBLISHED.items()}, name="RMSE").to_markdown(),
+    ]
     (out / "SUMMARY.md").write_text("\n".join(summary) + "\n")
     print(table.to_string(index=False))
     return table

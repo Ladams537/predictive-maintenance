@@ -13,6 +13,13 @@
     "phm08_score": 36502.0,
     "mean_bias": 11.75
   },
+  "within_cap": {
+    "rmse": 42.939,
+    "mae": 35.133,
+    "phm08_score": 36094.0,
+    "mean_bias": 18.898,
+    "n": 89
+  },
   "distribution_vs_capped_truth": {
     "true_quantiles": {
       "0.05": 9.9,

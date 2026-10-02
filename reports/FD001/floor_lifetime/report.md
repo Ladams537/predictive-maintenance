@@ -6,6 +6,7 @@ RUL cap: **125**. Evaluated on the last observed cycle of each test engine (n=10
 |---|---|---|---|---|
 | capped | 36.084 | 26.943 | 21032.4 | -2.22 |
 | raw | 36.793 | 28.013 | 23169.9 | -3.29 |
+| true RUL ≤ cap only (n=89) | 36.055 | 27.609 | 19365.7 | 0.17 |
 
 **Distribution:** std ratio 1.035 (1.0 = same spread as truth), KS 0.14 (p=0.2819), pred range [0.0, 125.0] vs true [7.0, 125.0].
 

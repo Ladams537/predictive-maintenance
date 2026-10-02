@@ -47,9 +47,12 @@ def evaluate(y_true_raw: np.ndarray, y_pred: np.ndarray, cap: float | None) -> d
     We report both so the comparison to published numbers is explicit, not accidental.
     """
     y_capped = cap_rul(y_true_raw, cap)
+    within = np.ones_like(y_true_raw, bool) if cap is None else y_true_raw <= cap
     return {
         "vs_capped_truth": summarize(y_capped, y_pred),
         "vs_raw_truth": summarize(y_true_raw, y_pred),
+        # Engines where capping is irrelevant: comparable across capping conventions.
+        "within_cap": {**summarize(y_true_raw[within], y_pred[within]), "n": int(within.sum())},
         "distribution_vs_capped_truth": distribution_check(y_capped, y_pred),
     }
 
@@ -166,7 +169,7 @@ def write_report(
     _worst_engines(test, worst, sensor_ref, out_dir / "worst_engines.png")
 
     (out_dir / "metrics.json").write_text(json.dumps(result, indent=2, default=str))
-    m, r = result["vs_capped_truth"], result["vs_raw_truth"]
+    m, r, w = result["vs_capped_truth"], result["vs_raw_truth"], result["within_cap"]
     d = result["distribution_vs_capped_truth"]
     md = [
         f"# {name}",
@@ -178,6 +181,8 @@ def write_report(
         "|---|---|---|---|---|",
         f"| capped | {m['rmse']} | {m['mae']} | {m['phm08_score']} | {m['mean_bias']} |",
         f"| raw | {r['rmse']} | {r['mae']} | {r['phm08_score']} | {r['mean_bias']} |",
+        f"| true RUL ≤ cap only (n={w['n']}) | {w['rmse']} | {w['mae']} | {w['phm08_score']} "
+        f"| {w['mean_bias']} |",
         "",
         f"**Distribution:** std ratio {d['std_ratio']} (1.0 = same spread as truth), "
         f"KS {d['ks_stat']} (p={d['ks_pvalue']}), "

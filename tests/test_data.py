@@ -8,7 +8,8 @@ import pandas as pd
 import pytest
 
 from cmapss import sanity
-from cmapss.data import DATA_DIR, cap_rul, last_cycles, load_test, load_train
+from cmapss.conditions import ConditionNormalizer, informative_sensors_by_condition
+from cmapss.data import DATA_DIR, SETTING_COLS, cap_rul, last_cycles, load_test, load_train
 from cmapss.download import verify
 from cmapss.features import feature_columns, informative_sensors, window_features
 from cmapss.metrics import phm08_score, rmse
@@ -114,3 +115,35 @@ def test_metrics():
     # Late (pred > true) is penalised more than early by the same amount.
     assert phm08_score([50], [60]) > phm08_score([50], [40])
     assert phm08_score([10, 20], [10, 20]) == 0
+
+
+@pytest.mark.parametrize("subset,k", [("FD001", 1), ("FD002", 6), ("FD003", 1), ("FD004", 6)])
+def test_operating_conditions(subset, k):
+    tr, te = load_train(subset), load_test(subset)
+    norm = ConditionNormalizer().fit(tr)
+    assert norm.n_conditions == k
+    # Each discrete setting combination maps to exactly one cluster, in train and test.
+    for df in (tr, te):
+        key = df[SETTING_COLS].round({"op1": 0, "op2": 2, "op3": 0}).astype(str).agg("|".join, 1)
+        assert (pd.crosstab(key, norm.condition(df)) > 0).sum(axis=1).max() == 1
+    # Within-condition z-scores on train: mean 0, std 1 for every varying sensor.
+    z = norm.transform(tr)
+    stats = z.groupby("condition")[["s2", "s3", "s4", "s11"]].agg(["mean", "std"])
+    np.testing.assert_allclose(stats.xs("mean", axis=1, level=1), 0, atol=1e-8)
+    np.testing.assert_allclose(stats.xs("std", axis=1, level=1), 1, atol=1e-8)
+
+
+def test_condition_stats_use_train_only():
+    tr, te = load_train("FD002"), load_test("FD002")
+    a = ConditionNormalizer().fit(tr).transform(te)
+    b = ConditionNormalizer().fit(tr).transform(te.assign(s2=te.s2 + 100))
+    # Shifting test values shifts their z-scores; it must not move the normalisation itself.
+    shift = (b.s2 - a.s2).groupby(a.condition).std()
+    assert (shift < 1e-6).all() and (b.s3 == a.s3).all()
+
+
+def test_normalised_sensor_selection():
+    tr = load_train("FD002")
+    cond = ConditionNormalizer().fit(tr).condition(tr)
+    # After removing condition effects, FD002 has the same 14 informative sensors as FD001.
+    assert informative_sensors_by_condition(tr, cond) == informative_sensors(load_train("FD001"))

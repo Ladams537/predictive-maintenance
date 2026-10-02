@@ -51,7 +51,7 @@ above 125. That's why the two columns are close.
 - **noise:** XGBoost trained on Gaussian noise of the same shape as the real features.
   This should collapse to ≈ the mean floor with std ratio ≈ 0, and it does (42.3, 0.11).
 
-## Why we believe XGBoost = 12.2 (it's inside the published SOTA band)
+## Why we believe XGBoost ≈ 12 on FD001 (it's inside the published SOTA band)
 
 An off-the-shelf tree model matching deep-learning papers is a red flag, so we checked
 (`uv run python -m cmapss.ablation`, FD001):
@@ -73,8 +73,60 @@ saturated with good feature engineering. The deep-model story has to be won on F
 (six operating conditions) and/or on what the model enables for explanations, not on FD001
 RMSE alone.
 
+## Operating conditions (FD002, FD004)
+
+FD002/FD004 fly six discrete operating conditions, and sensors move far more with condition
+than with wear. `ConditionNormalizer` clusters rows on the three settings (KMeans, k = number
+of distinct rounded setting combinations: 1 on FD001/3, 6 on FD002/4) and z-scores each
+sensor within its condition, using **train statistics only**. Tests check that each setting
+combination maps to exactly one cluster in both splits, and that test values never move the
+normalisation. It's applied to all four subsets. On FD001/3 it's a global z-score: linear
+results are identical and XGBoost moves within its seed noise.
+
+The normaliser is fit on all training engines, including each CV fold's validation engines.
+It uses no labels and only per-condition sensor means and stds over ~200 engines, so the
+leak is negligible. Noted rather than ignored.
+
+Sensor selection counts distinct raw values *within* the median condition. FD002 then gets
+the same 14 sensors as FD001. FD003/FD004 add s6 (bypass-duct pressure) and s10 (engine
+pressure ratio), which fits physically: those are the subsets with fan degradation.
+
+## Results, all subsets (cap 125, last-cycle test evaluation)
+
+`rmse_rul_le_cap` scores only test engines whose true RUL ≤ 125, where the capping
+convention makes no difference. **It's the most protocol-robust number we report.**
+
+| subset | linear | XGBoost | XGBoost, RUL ≤ cap only | XGBoost vs raw truth | XGBoost CV |
+|---|---|---|---|---|---|
+| FD001 | 18.2 | 11.9 | 11.6 (n=89) | 13.2 | 12.1 ± 1.4 |
+| FD002 | 18.4 | 12.7 | 12.9 (n=202) | 25.4 | 14.2 ± 0.9 |
+| FD003 | 18.1 | 12.1 | 11.5 (n=85) | 14.0 | 11.3 ± 1.3 |
+| FD004 | 21.9 | 13.8 | 14.1 (n=181) | 26.2 | 13.4 ± 1.0 |
+
+`uv run python -m cmapss.ablation --subset FDxxx` on all four: seed spread ≤ 0.4, shuffled
+labels → ~45 (the mean floor), cycle-only → 30–39. On FD002/FD004, removing condition
+normalisation costs ~4 RMSE (12.7 → 16.4, 13.8 → 18.2).
+
+### Open question: our multi-condition numbers beat the reference papers by ~10 RMSE
+
+Reference figures (Babu 2016 CNN, Zheng 2017 LSTM, Li 2018 DCNN) for FD002/FD004 are
+22–30. Our XGBoost gets 12.7/13.8. We've ruled out the obvious explanations:
+
+- *Capping artefact?* No. On engines where capping is irrelevant it's 12.9/14.1.
+- *Label leakage?* No. Shuffled labels collapse to the floor.
+- *Train/test contamination?* No identical rows. Normalisation stats are train-only (tested).
+
+The most plausible explanation is protocol: those papers normalise globally (min-max) rather
+than per operating condition, and per-condition normalisation alone is worth ~4 RMSE here.
+Recent papers that do normalise per condition are believed to report FD002 ≈ 13–15 and
+FD004 ≈ 15–18, which would put this baseline *at* SOTA, not past it. **This is unverified.**
+Settling it means reading a modern SOTA paper's protocol section: normalisation, test-label
+capping, window length, last-cycle evaluation. Until then, the multi-condition numbers are
+reported but not claimed as SOTA-beating.
+
+The real gap on FD002/FD004 is engines with RUL > 125 (22–27% of test). No capped model can
+tell RUL 150 from 190, so raw-truth RMSE stays ~25 whatever the model.
+
 ## Known gaps / next
 
-- FD002/FD004: all 21 sensors vary with operating condition, so they need per-condition
-  normalisation (cluster on op1–op3, z-score per cluster) before features mean anything.
 - The PHM08 score is a sum, so it's only comparable within a subset.
