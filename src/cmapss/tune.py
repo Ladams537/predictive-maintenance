@@ -31,6 +31,15 @@ def trunc_points(engines: np.ndarray, seed: int) -> np.ndarray:
     return np.array([rng.choice(np.flatnonzero(engines == e)) for e in np.unique(engines)])
 
 
+def _below_cap(y: np.ndarray, pred: np.ndarray) -> dict:
+    """Held-out cycles whose target is below its maximum, i.e. outside the flat capped region.
+    The benchmark's truncated test engines are mostly here (89% on FD001), while random
+    points over whole lives are ~40% capped, so the other views over-weight the easy region.
+    On uncapped targets (N-CMAPSS) this is every cycle."""
+    m = y < y.max()
+    return {"rmse_below_cap": rmse(y[m], pred[m])}
+
+
 def _job(args):
     import torch
 
@@ -49,6 +58,7 @@ def _job(args):
         "fold": fold,
         "rmse_all": rmse(va_w.y, pred),
         "rmse_trunc": rmse(va_w.y[trunc], pred[trunc]),
+        **_below_cap(va_w.y, pred),
         "best_epoch": info["best_epoch"],
         "train_rmse_final": info["train_rmse"][-1],
     }
@@ -72,6 +82,7 @@ def _xgb_reference(d: dict, folds) -> list[dict]:
                 "fold": fold,
                 "rmse_all": rmse(y[va], pred),
                 "rmse_trunc": rmse(y[va][t], pred[t]),
+                **_below_cap(y[va], pred),
                 "best_epoch": np.nan,
                 "train_rmse_final": np.nan,
             }
@@ -108,6 +119,7 @@ def main() -> None:
             rmse_all=("rmse_all", "mean"),
             rmse_all_sd=("rmse_all", "std"),
             rmse_trunc=("rmse_trunc", "mean"),
+            rmse_below_cap=("rmse_below_cap", "mean"),
             best_epoch=("best_epoch", "mean"),
             train_rmse=("train_rmse_final", "mean"),
         )

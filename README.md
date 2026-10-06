@@ -3,7 +3,7 @@
 Remaining Useful Life (RUL) prediction on NASA C-MAPSS turbofan data, with LLM-generated
 failure explanations grounded in the sensor signals that drove each prediction.
 
-**Status:** week 1. C-MAPSS pipeline (all four subsets), sanity floors, linear + XGBoost baselines, per-model
+**Status:** week 2. C-MAPSS pipeline (all four subsets), sanity floors, linear + XGBoost baselines, per-model
 reports. N-CMAPSS ingested as ground truth for the explanation evals
 ([`docs/NCMAPSS.md`](docs/NCMAPSS.md)).
 
@@ -39,12 +39,18 @@ baseline beats those older papers by ~10 RMSE. That's an open question, not a cl
 [`docs/PROTOCOL.md`](docs/PROTOCOL.md), which also documents how every number is computed
 and how the suspicious ones were checked.
 
+GRU sequence model (5-seed ensemble, see [`docs/MODEL.md`](docs/MODEL.md)): FD001 13.7,
+FD002 13.4, FD003 12.2, FD004 12.9. It ties or trails XGBoost; no subset shows a significant
+deep-model win.
+
 ### N-CMAPSS (uncapped RUL, every test cycle)
 
 | setting | floor (age only) | linear | XGBoost |
 |---|---|---|---|
 | pooled, all 9 subsets | 11.9 | 9.5 | 7.1 |
 | DS02 | 9.4 | 10.7 | 6.4 |
+
+GRU ensemble: pooled 7.3, DS02 8.7.
 
 Representation, protocol and ablations: [`docs/NCMAPSS.md`](docs/NCMAPSS.md).
 
@@ -65,6 +71,8 @@ src/cmapss/
   ncmapss_features.py  healthy-engine model -> per-cycle residuals (cross-fitted)
   ncmapss_baselines.py floors / linear / XGBoost with per-subset, per-fault, per-Fc breakdowns
   ncmapss_ablation.py  what the N-CMAPSS baseline actually uses
+  seq.py / model.py    per-cycle windows; GRU and Transformer RUL models
+  train.py / tune.py   multi-seed training; nested engine-level CV for model selection
   ablation.py   seeds / feature ablations / shuffled labels for a suspicious result
 tests/          data facts, label correctness, lookahead + leakage guards, N-CMAPSS truth
 reports/        generated, committed so results are reviewable in diffs
