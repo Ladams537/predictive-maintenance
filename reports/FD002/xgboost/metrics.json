@@ -1,0 +1,118 @@
+{
+  "model": "xgboost",
+  "cap": 125,
+  "vs_capped_truth": {
+    "rmse": 12.698,
+    "mae": 9.107,
+    "phm08_score": 686.6,
+    "mean_bias": -0.39
+  },
+  "vs_raw_truth": {
+    "rmse": 25.375,
+    "mae": 16.601,
+    "phm08_score": 6943.8,
+    "mean_bias": -7.884
+  },
+  "within_cap": {
+    "rmse": 12.894,
+    "mae": 9.091,
+    "phm08_score": 603.1,
+    "mean_bias": 2.086,
+    "n": 202
+  },
+  "distribution_vs_capped_truth": {
+    "true_quantiles": {
+      "0.05": 8.0,
+      "0.25": 35.0,
+      "0.5": 80.0,
+      "0.75": 121.0,
+      "0.95": 125.0
+    },
+    "pred_quantiles": {
+      "0.05": 7.3,
+      "0.25": 30.6,
+      "0.5": 82.9,
+      "0.75": 112.1,
+      "0.95": 124.0
+    },
+    "true_range": [
+      6.0,
+      125.0
+    ],
+    "pred_range": [
+      3.3,
+      125.0
+    ],
+    "std_ratio": 0.972,
+    "ks_stat": 0.181,
+    "ks_pvalue": 0.0004
+  },
+  "cv_rmse_mean": 14.225,
+  "cv_rmse_std": 0.864,
+  "cv_rmse_folds": [
+    13.21,
+    14.76,
+    15.56,
+    13.44,
+    14.14
+  ],
+  "features": [
+    "cycle",
+    "s2_last",
+    "s2_mean",
+    "s2_std",
+    "s2_slope",
+    "s3_last",
+    "s3_mean",
+    "s3_std",
+    "s3_slope",
+    "s4_last",
+    "s4_mean",
+    "s4_std",
+    "s4_slope",
+    "s7_last",
+    "s7_mean",
+    "s7_std",
+    "s7_slope",
+    "s8_last",
+    "s8_mean",
+    "s8_std",
+    "s8_slope",
+    "s9_last",
+    "s9_mean",
+    "s9_std",
+    "s9_slope",
+    "s11_last",
+    "s11_mean",
+    "s11_std",
+    "s11_slope",
+    "s12_last",
+    "s12_mean",
+    "s12_std",
+    "s12_slope",
+    "s13_last",
+    "s13_mean",
+    "s13_std",
+    "s13_slope",
+    "s14_last",
+    "s14_mean",
+    "s14_std",
+    "s14_slope",
+    "s15_last",
+    "s15_mean",
+    "s15_std",
+    "s15_slope",
+    "s17_last",
+    "s17_mean",
+    "s17_std",
+    "s17_slope",
+    "s20_last",
+    "s20_mean",
+    "s20_std",
+    "s20_slope",
+    "s21_last",
+    "s21_mean",
+    "s21_std",
+    "s21_slope"
+  ]
+}

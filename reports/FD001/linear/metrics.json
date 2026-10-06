@@ -1,0 +1,118 @@
+{
+  "model": "linear",
+  "cap": 125,
+  "vs_capped_truth": {
+    "rmse": 18.168,
+    "mae": 14.407,
+    "phm08_score": 553.5,
+    "mean_bias": 1.326
+  },
+  "vs_raw_truth": {
+    "rmse": 19.467,
+    "mae": 15.477,
+    "phm08_score": 622.6,
+    "mean_bias": 0.256
+  },
+  "within_cap": {
+    "rmse": 17.759,
+    "mae": 13.992,
+    "phm08_score": 496.1,
+    "mean_bias": 3.686,
+    "n": 89
+  },
+  "distribution_vs_capped_truth": {
+    "true_quantiles": {
+      "0.05": 9.9,
+      "0.25": 32.8,
+      "0.5": 86.0,
+      "0.75": 112.2,
+      "0.95": 125.0
+    },
+    "pred_quantiles": {
+      "0.05": 11.7,
+      "0.25": 49.2,
+      "0.5": 84.9,
+      "0.75": 102.3,
+      "0.95": 120.0
+    },
+    "true_range": [
+      7.0,
+      125.0
+    ],
+    "pred_range": [
+      0.0,
+      125.0
+    ],
+    "std_ratio": 0.827,
+    "ks_stat": 0.14,
+    "ks_pvalue": 0.2819
+  },
+  "cv_rmse_mean": 18.658,
+  "cv_rmse_std": 1.633,
+  "cv_rmse_folds": [
+    21.64,
+    18.7,
+    18.51,
+    17.58,
+    16.86
+  ],
+  "features": [
+    "cycle",
+    "s2_last",
+    "s2_mean",
+    "s2_std",
+    "s2_slope",
+    "s3_last",
+    "s3_mean",
+    "s3_std",
+    "s3_slope",
+    "s4_last",
+    "s4_mean",
+    "s4_std",
+    "s4_slope",
+    "s7_last",
+    "s7_mean",
+    "s7_std",
+    "s7_slope",
+    "s8_last",
+    "s8_mean",
+    "s8_std",
+    "s8_slope",
+    "s9_last",
+    "s9_mean",
+    "s9_std",
+    "s9_slope",
+    "s11_last",
+    "s11_mean",
+    "s11_std",
+    "s11_slope",
+    "s12_last",
+    "s12_mean",
+    "s12_std",
+    "s12_slope",
+    "s13_last",
+    "s13_mean",
+    "s13_std",
+    "s13_slope",
+    "s14_last",
+    "s14_mean",
+    "s14_std",
+    "s14_slope",
+    "s15_last",
+    "s15_mean",
+    "s15_std",
+    "s15_slope",
+    "s17_last",
+    "s17_mean",
+    "s17_std",
+    "s17_slope",
+    "s20_last",
+    "s20_mean",
+    "s20_std",
+    "s20_slope",
+    "s21_last",
+    "s21_mean",
+    "s21_std",
+    "s21_slope"
+  ]
+}
