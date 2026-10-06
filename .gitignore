@@ -6,3 +6,4 @@ __pycache__/
 # Raw data is fetched + checksum-verified by `python -m cmapss.download`; don't commit it.
 data/raw/
 data/interim/
+models/
